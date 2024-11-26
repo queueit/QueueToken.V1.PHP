@@ -1,4 +1,3 @@
-[![npm](https://img.shields.io/npm/v/@queue-it/queue-token)](https://www.npmjs.com/package/@queue-it/queue-token)
 
 # Queue-it Queue Token SDK for PHP
 
