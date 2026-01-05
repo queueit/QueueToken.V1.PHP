@@ -2,17 +2,15 @@
 
 namespace QueueIT\QueueToken\Exceptions;
 
-//use QueueIT\QueueToken\Exception;
-
 use Exception;
 
 class TokenDeserializationException extends Exception
 {
-    public $InternalException;
+    public ?Exception $internalException;
 
-    public function __construct($message, $ex)
+    public function __construct(string $message, ?Exception $ex = null)
     {
         parent::__construct($message);
-        $this->InternalException = $ex;
+        $this->internalException = $ex;
     }
 }

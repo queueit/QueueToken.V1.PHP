@@ -1,62 +1,52 @@
 <?php
+
 namespace QueueIT\QueueToken\Models;
 
-require_once __DIR__.'/TokenOrigin.php';
-require_once __DIR__.'/../Helpers/Utils.php';
-require_once __DIR__.'/../Helpers/Base64UrlEncoding.php';
+use QueueIT\QueueToken\Helpers\Utils;
+use QueueIT\QueueToken\Helpers\Base64UrlEncoding;
+use QueueIT\QueueToken\Helpers\AESEncryption;
 
-use QueueIT\Helpers\Utils;
-use QueueIT\Helpers\Base64UrlEncoding;
-use Queueit\Helpers\AESEncryption;
+class PayloadDto
+{
+    public ?float $relativeQuality;
+    public ?string $key;
+    public ?array $customData = [];
+    public ?string $origin;
 
-
-class PayloadDto {
-    public ?float $RelativeQuality;
-    public ?string $Key;
-    public ?array $CustomData=[];
-    public ?string $Origin;
-
-    public function Serialize(): array
+    public function serialize(): array
     {
         $obj = [
-            'r' => $this->RelativeQuality,
-            'k' => $this->Key??"",
+            'r' => $this->relativeQuality,
+            'k' => $this->key ?? "",
         ];
 
-        if (!empty($this->CustomData)) {
-            $obj['cd'] = $this->CustomData;
+        if (!empty($this->customData)) {
+            $obj['cd'] = $this->customData;
         }
 
-        if ($this->Origin) {
-            $obj['o'] = $this->Origin;
+        if ($this->origin) {
+            $obj['o'] = $this->origin;
         }
 
         $jsonString = json_encode($obj);
-        // Convert JSON string to byte array
-        return unpack('C*', $jsonString);
-
+        return array_values(unpack('C*', $jsonString));
     }
 
-    public static function DeserializePayload($input, $secretKey, $tokenIdentifier): ?PayloadDto {
-        $headerEncrypted = Base64UrlEncoding::decode($input); // Decode the input
-        $decryptedBytes = AESEncryption::DecryptPayload($secretKey, $tokenIdentifier, $headerEncrypted); // Decrypt the payload
-        $jsonData = json_decode(Utils::uint8ArrayToString($decryptedBytes), true); // Decode JSON
+    public static function deserializePayload(string $input, string $secretKey, string $tokenIdentifier): ?PayloadDto
+    {
+        $headerEncrypted = Base64UrlEncoding::decode($input);
+        $decryptedBytes = AESEncryption::decryptPayload($secretKey, $tokenIdentifier, $headerEncrypted);
+        $jsonData = json_decode(Utils::uint8ArrayToString($decryptedBytes), true);
 
         if ($jsonData === null) {
-            return null; // Return null if JSON decoding fails
+            return null;
         }
 
         $payload = new PayloadDto();
-        $payload->RelativeQuality = $jsonData['r'] ?? null;
-        $payload->Key = $jsonData['k'];
-
-        if (isset($jsonData['cd'])) {
-            $payload->CustomData = $jsonData['cd'];
-        }
-
-        if (isset($jsonData['o'])) {
-            $payload->Origin = $jsonData['o'];
-        }
+        $payload->relativeQuality = $jsonData['r'] ?? null;
+        $payload->key = $jsonData['k'] ?? null;
+        $payload->customData = $jsonData['cd'] ?? [];
+        $payload->origin = $jsonData['o'] ?? null;
 
         return $payload;
     }

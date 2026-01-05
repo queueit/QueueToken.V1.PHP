@@ -1,10 +1,10 @@
 <?php
 
-require_once __DIR__.'/../src/Helpers/Utils.php';
+namespace QueueIT\QueueToken\Tests;
 
 use PHPUnit\Framework\TestCase;
-use QueueIT\Helpers\Utils;
 
+use QueueIT\QueueToken\Helpers\Utils;
 
 class QueueITHelpersTest extends TestCase
 {

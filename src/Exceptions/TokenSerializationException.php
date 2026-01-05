@@ -6,11 +6,11 @@ use Exception;
 
 class TokenSerializationException extends Exception
 {
-    public $InternalException;
+    public ?Exception $internalException;
 
-    public function __construct($ex)
+    public function __construct(?Exception $ex = null)
     {
         parent::__construct("Exception serializing token");
-        $this->InternalException = $ex;
+        $this->internalException = $ex;
     }
 }

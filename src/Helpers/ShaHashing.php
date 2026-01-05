@@ -1,12 +1,12 @@
 <?php
 
-namespace QueueIT\Helpers;
+namespace QueueIT\QueueToken\Helpers;
+
 class ShaHashing
 {
-    public static function GenerateHash($secretKey, $tokenString)
+    public static function generateHash(string $secretKey, string $tokenString): string
     {
         $combinedString = $tokenString . $secretKey;
-        $content = hash('sha256', $combinedString, true);
-        return $content;
+        return  hash('sha256', $combinedString, true);
     }
 }

@@ -1,17 +1,18 @@
 <?php
 
 namespace QueueIT\QueueToken;
+
 interface IEnqueueTokenPayload
 {
-    public function getKey();
+    public function getKey(): ?string;
 
-    public function getRelativeQuality();
+    public function getRelativeQuality(): ?float;
 
-    public function getCustomData();
+    public function getCustomData(): array;
 
-    public function getTokenOrigin();
+    public function getTokenOrigin(): string;
 
-    public function EncryptAndEncode($secretKey, $tokenIdentifier);
+    public function encryptAndEncode(string $secretKey, string $tokenIdentifier): string;
 
-    public function Serialize();
+    public function serialize(): array;
 }

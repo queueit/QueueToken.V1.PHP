@@ -1,34 +1,51 @@
 <?php
-namespace QueueIT\Helpers;
 
-require 'ShaHashing.php';
+namespace QueueIT\QueueToken\Helpers;
 
-use QueueIT\Helpers\ShaHashing;
-class AESEncryption {
+use QueueIT\QueueToken\Helpers\ShaHashing;
+use Exception;
 
-    public static function EncryptPayload($secretKey, $tokenIdentifier, $valueToEncrypt) {
-        $key = ShaHashing::GenerateHash($secretKey, '');
-        $iv = md5($tokenIdentifier, true);
-        $encryptedData = openssl_encrypt(pack('C*', ...$valueToEncrypt), 'aes-256-cbc', $key, OPENSSL_RAW_DATA, $iv);
+class AESEncryption
+{
+    private const CIPHER = 'aes-256-cbc';
+
+    public static function encryptPayload(string $secretKey, string $tokenIdentifier, array $valueToEncrypt): string
+    {
+        $key = self::deriveKey($secretKey);
+        $iv = self::generateIV($tokenIdentifier);
+        $data = pack('C*', ...$valueToEncrypt);
+
+        $encryptedData = openssl_encrypt($data, self::CIPHER, $key, OPENSSL_RAW_DATA, $iv);
+
+        if ($encryptedData === false) {
+            throw new Exception("Encryption failed.");
+        }
+
         return $encryptedData;
     }
 
+    public static function decryptPayload(string $secretKey, string $tokenIdentifier, string $encryptedData): array
+    {
+        $key = self::deriveKey($secretKey);
+        $iv = self::generateIV($tokenIdentifier);
 
-    public static function DecryptPayload($secretKey, $tokenIdentifier, $encryptedData) {
-        // Derive the key using the same hashing method as EncryptPayload
-        $key = ShaHashing::GenerateHash($secretKey, '');
+        $decryptedData = openssl_decrypt($encryptedData, self::CIPHER, $key, OPENSSL_RAW_DATA, $iv);
 
-        // Generate the IV using the token identifier
-        $iv = md5($tokenIdentifier, true);
-        // Decrypt the data
-        $decryptedData = openssl_decrypt($encryptedData, 'aes-256-cbc', $key, OPENSSL_RAW_DATA, $iv);
         if ($decryptedData === false) {
             throw new Exception("Decryption failed.");
         }
-        // Convert decrypted binary data back to an array of integers
-        $decryptedArray = array_values(unpack('C*', $decryptedData));
 
-        return $decryptedArray;
+        return array_values(unpack('C*', $decryptedData));
+    }
+
+    private static function deriveKey(string $secretKey): string
+    {
+        return ShaHashing::generateHash($secretKey, '');
+    }
+
+    private static function generateIV(string $tokenIdentifier): string
+    {
+        // Safe to use deterministic IV since tokenIdentifier is unique per token
+        return md5($tokenIdentifier, true);
     }
 }
-

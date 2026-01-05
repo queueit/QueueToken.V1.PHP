@@ -1,15 +1,12 @@
 <?php
 
-require_once __DIR__.'/../src/Payload.php';
-require_once __DIR__.'/../src/Helpers/AESEncryption.php';
-require_once __DIR__.'/../src/Helpers/Utils.php';
-require_once __DIR__.'/../src/EnqueueTokenPayload.php';
+namespace QueueIT\QueueToken\Tests;
 
 use PHPUnit\Framework\TestCase;
-use QueueIT\Helpers\Utils;
+
+use QueueIT\QueueToken\Helpers\Utils;
 use QueueIT\QueueToken\Payload;
 use QueueIT\QueueToken\EnqueueTokenPayload;
-
 
 class EnqueueTokenPayloadTest extends TestCase
 {
@@ -17,9 +14,9 @@ class EnqueueTokenPayloadTest extends TestCase
     {
         $expectedKey = "myKey";
 
-        $instance = Payload::Enqueue()
-            ->WithKey($expectedKey)
-            ->Generate();
+        $instance = Payload::enqueue()
+            ->withKey($expectedKey)
+            ->generate();
         $actualKey = $instance->getKey();
         $actualCustomData = $instance->getCustomData();
 
@@ -35,10 +32,10 @@ class EnqueueTokenPayloadTest extends TestCase
         $expectedKey = "myKey";
         $expectedRelativeQuality = 0.456;
 
-        $instance = Payload::Enqueue()
-            ->WithKey($expectedKey)
-            ->WithRelativeQuality($expectedRelativeQuality)
-            ->Generate();
+        $instance = Payload::enqueue()
+            ->withKey($expectedKey)
+            ->withRelativeQuality($expectedRelativeQuality)
+            ->generate();
         $actualKey = $instance->getKey();
         $actualRelativeQuality = $instance->getRelativeQuality();
         $actualCustomData = $instance->getCustomData();
@@ -56,11 +53,11 @@ class EnqueueTokenPayloadTest extends TestCase
         $expectedRelativeQuality = 0.456;
         $expectedCustomDataValue = "Value";
 
-        $instance = Payload::Enqueue()
-            ->WithKey($expectedKey)
-            ->WithRelativeQuality($expectedRelativeQuality)
-            ->WithCustomData("key", $expectedCustomDataValue)
-            ->Generate();
+        $instance = Payload::enqueue()
+            ->withKey($expectedKey)
+            ->withRelativeQuality($expectedRelativeQuality)
+            ->withCustomData("key", $expectedCustomDataValue)
+            ->generate();
         $actualKey = $instance->getKey();
         $actualRelativeQuality = $instance->getRelativeQuality();
         $actualCustomData = $instance->getCustomData()["key"];
@@ -74,9 +71,9 @@ class EnqueueTokenPayloadTest extends TestCase
     {
         $expectedRelativeQuality = 0.456;
 
-        $instance = Payload::Enqueue()
-            ->WithRelativeQuality($expectedRelativeQuality)
-            ->Generate();
+        $instance = Payload::enqueue()
+            ->withRelativeQuality($expectedRelativeQuality)
+            ->generate();
         $actualKey = $instance->getKey();
         $actualRelativeQuality = $instance->getRelativeQuality();
         $actualCustomData = $instance->getCustomData();
@@ -92,10 +89,10 @@ class EnqueueTokenPayloadTest extends TestCase
         $expectedRelativeQuality = 0.456;
         $expectedCustomDataValue = "Value";
 
-        $instance = Payload::Enqueue()
-            ->WithRelativeQuality($expectedRelativeQuality)
-            ->WithCustomData("key", $expectedCustomDataValue)
-            ->Generate();
+        $instance = Payload::enqueue()
+            ->withRelativeQuality($expectedRelativeQuality)
+            ->withCustomData("key", $expectedCustomDataValue)
+            ->generate();
         $actualKey = $instance->getKey();
         $actualRelativeQuality = $instance->getRelativeQuality();
         $actualCustomData = $instance->getCustomData()["key"];
@@ -109,9 +106,9 @@ class EnqueueTokenPayloadTest extends TestCase
     {
         $expectedCustomDataValue = "value";
 
-        $instance = Payload::Enqueue()
-            ->WithCustomData("key", $expectedCustomDataValue)
-            ->Generate();
+        $instance = Payload::enqueue()
+            ->withCustomData("key", $expectedCustomDataValue)
+            ->generate();
         $actualKey = $instance->getKey();
         $actualRelativeQuality = $instance->getRelativeQuality();
         $actualCustomData = $instance->getCustomData()["key"];
@@ -125,14 +122,14 @@ class EnqueueTokenPayloadTest extends TestCase
     {
         $expectedJson = '{"r":0.456,"k":"myKey","cd":{"key1":"Value1","key2":"Value2","key3":"Value3"},"o":"Connector"}';
 
-        $instance = Payload::Enqueue()
-            ->WithKey("myKey")
-            ->WithRelativeQuality(0.456)
-            ->WithCustomData("key1", "Value1")
-            ->WithCustomData("key2", "Value2")
-            ->WithCustomData("key3", "Value3")
-            ->Generate();
-        $serializedInstance = $instance->Serialize();
+        $instance = Payload::enqueue()
+            ->withKey("myKey")
+            ->withRelativeQuality(0.456)
+            ->withCustomData("key1", "Value1")
+            ->withCustomData("key2", "Value2")
+            ->withCustomData("key3", "Value3")
+            ->generate();
+        $serializedInstance = $instance->serialize();
         $actualJson = Utils::uint8ArrayToString($serializedInstance);
 
         $this->assertEquals($expectedJson, $actualJson);
@@ -142,12 +139,12 @@ class EnqueueTokenPayloadTest extends TestCase
     {
         $expectedJson = '{"r":0.456,"k":"myKey","cd":{"key1":"Value1"},"o":"Connector"}';
 
-        $instance = Payload::Enqueue()
-            ->WithKey("myKey")
-            ->WithRelativeQuality(0.456)
-            ->WithCustomData("key1", "Value1")
-            ->Generate();
-        $actualJson = Utils::uint8ArrayToString($instance->Serialize());
+        $instance = Payload::enqueue()
+            ->withKey("myKey")
+            ->withRelativeQuality(0.456)
+            ->withCustomData("key1", "Value1")
+            ->generate();
+        $actualJson = Utils::uint8ArrayToString($instance->serialize());
 
         $this->assertEquals($expectedJson, $actualJson);
     }
@@ -156,11 +153,11 @@ class EnqueueTokenPayloadTest extends TestCase
     {
         $expectedJson = '{"r":0.456,"k":"myKey","o":"Connector"}';
 
-        $instance = Payload::Enqueue()
-            ->WithKey("myKey")
-            ->WithRelativeQuality(0.456)
-            ->Generate();
-        $actualJson = Utils::uint8ArrayToString($instance->Serialize());
+        $instance = Payload::enqueue()
+            ->withKey("myKey")
+            ->withRelativeQuality(0.456)
+            ->generate();
+        $actualJson = Utils::uint8ArrayToString($instance->serialize());
 
         $this->assertEquals($expectedJson, $actualJson);
     }
@@ -169,10 +166,10 @@ class EnqueueTokenPayloadTest extends TestCase
     {
         $expectedJson = '{"r":null,"k":"myKey","o":"Connector"}';
 
-        $instance = Payload::Enqueue()
-            ->WithKey("myKey")
-            ->Generate();
-        $actualJson = Utils::uint8ArrayToString($instance->Serialize());
+        $instance = Payload::enqueue()
+            ->withKey("myKey")
+            ->generate();
+        $actualJson = Utils::uint8ArrayToString($instance->serialize());
 
         $this->assertEquals($expectedJson, $actualJson);
     }
@@ -181,10 +178,10 @@ class EnqueueTokenPayloadTest extends TestCase
     {
         $expectedJson = '{"r":null,"k":"my\\"Key","o":"Connector"}';
 
-        $instance = Payload::Enqueue()
-            ->WithKey('my"Key')
-            ->Generate();
-        $actualJson = Utils::uint8ArrayToString($instance->Serialize());
+        $instance = Payload::enqueue()
+            ->withKey('my"Key')
+            ->generate();
+        $actualJson = Utils::uint8ArrayToString($instance->serialize());
 
         $this->assertEquals($expectedJson, $actualJson);
     }
@@ -193,11 +190,10 @@ class EnqueueTokenPayloadTest extends TestCase
     {
         $expectedJson = '{"r":0.456,"k":"","o":"Connector"}';
 
-        $instance = Payload::Enqueue()
-            ->WithRelativeQuality(0.456)
-            ->Generate();
-        $actualJson = Utils::uint8ArrayToString($instance->Serialize(), true);
-        //$actualJson = Utils::uint8ArrayToString($instance->Serialize());
+        $instance = Payload::enqueue()
+            ->withRelativeQuality(0.456)
+            ->generate();
+        $actualJson = Utils::uint8ArrayToString($instance->serialize());
 
         $this->assertEquals($expectedJson, $actualJson);
     }
@@ -206,10 +202,10 @@ class EnqueueTokenPayloadTest extends TestCase
     {
         $expectedJson = '{"r":null,"k":"","cd":{"key1":"Value1"},"o":"Connector"}';
 
-        $instance = Payload::Enqueue()
-            ->WithCustomData("key1", "Value1")
-            ->Generate();
-        $actualJson = Utils::uint8ArrayToString($instance->Serialize());
+        $instance = Payload::enqueue()
+            ->withCustomData("key1", "Value1")
+            ->generate();
+        $actualJson = Utils::uint8ArrayToString($instance->serialize());
 
         $this->assertEquals($expectedJson, $actualJson);
     }
@@ -218,10 +214,10 @@ class EnqueueTokenPayloadTest extends TestCase
     {
         $expectedJson = '{"r":null,"k":"","cd":{"ke\"y1":"Va\"lue1"},"o":"Connector"}';
 
-        $instance = Payload::Enqueue()
-            ->WithCustomData('ke"y1', 'Va"lue1')
-            ->Generate();
-        $actualJson = Utils::uint8ArrayToString($instance->Serialize());
+        $instance = Payload::enqueue()
+            ->withCustomData('ke"y1', 'Va"lue1')
+            ->generate();
+        $actualJson = Utils::uint8ArrayToString($instance->serialize());
 
         $this->assertEquals($expectedJson, $actualJson);
     }
@@ -229,20 +225,20 @@ class EnqueueTokenPayloadTest extends TestCase
     public function testEncryptedCorrectly()
     {
         $expectedEncryptedPayload = "0rDlI69F1Dx4Twps5qD4cQrbXbCRiezBd6fH1PVm6CnVY456FALkAhN3rgVrh_PGCJHcEXN5zoqFg65MH8WZcxl-G7_FAsZgEyBPRqsoJoylWJjVe-e1HI-voBaV7x6Q";
-        
-        $payload = Payload::Enqueue()
-            ->WithKey("somekey")
-            ->WithRelativeQuality(0.45678663514)
-            ->WithCustomData("color", "blue")
-            ->WithCustomData("size", "medium")
-            ->Generate();
-        
+
+        $payload = Payload::enqueue()
+            ->withKey("somekey")
+            ->withRelativeQuality(0.45678663514)
+            ->withCustomData("color", "blue")
+            ->withCustomData("size", "medium")
+            ->generate();
+
         $identifier = "a21d423a-43fd-4821-84fa-4390f6a2fd3e";
         $secretKey = "5ebbf794-1665-4d48-80d6-21ac34be7faedf9e10b3-551a-4682-bb77-fee59d6355d6";
 
-        $actualEncryptedPayload = $payload->EncryptAndEncode($secretKey, $identifier);
+        $actualEncryptedPayload = $payload->encryptAndEncode($secretKey, $identifier);
 
-        $decryptPayload = EnqueueTokenPayload::Deserialize($actualEncryptedPayload, $secretKey, $identifier);
+        $decryptPayload = EnqueueTokenPayload::deserialize($actualEncryptedPayload, $secretKey, $identifier);
 
         $this->assertEquals($expectedEncryptedPayload, $actualEncryptedPayload);
         $this->assertEquals($payload, $decryptPayload);

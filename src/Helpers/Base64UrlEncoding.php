@@ -1,17 +1,17 @@
 <?php
 
-namespace QueueIT\Helpers;
+namespace QueueIT\QueueToken\Helpers;
+
 class Base64UrlEncoding
 {
-    public static function Encode(string $input): string
+    public static function encode(string $input): string
     {
         $base64 = base64_encode($input);
 
         return str_replace(['+', '/', '='], ['-', '_', ''], $base64);
-
     }
 
-    public static function Decode(string $input)
+    public static function decode(string $input): string
     {
         $base64 = str_replace(['-', '_'], ['+', '/'], $input);
 

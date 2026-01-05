@@ -1,5 +1,23 @@
-/nbproject/private/
-Tests/vendor
-Tests/composer.lock
-/simpletest
-/.vs
+# Composer
+/vendor/
+composer.phar
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Environment files
+.env
+.env.local
+
+# PHPUnit cache
+.phpunit.result.cache

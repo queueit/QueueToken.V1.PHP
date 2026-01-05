@@ -2,17 +2,15 @@
 
 namespace QueueIT\QueueToken;
 
-require 'Models\HeaderDto.php';
-
 class Token
 {
-    public static function Enqueue($customerId, $tokenIdentifierPrefix = null)
+    public static function enqueue(string $customerId, ?string $tokenIdentifierPrefix = null): EnqueueTokenGenerator
     {
         return new EnqueueTokenGenerator($customerId, $tokenIdentifierPrefix);
     }
 
-    public static function Parse($token, $secretKey): IEnqueueToken
+    public static function parse(string $token, string $secretKey): IEnqueueToken
     {
-        return EnqueueToken::Parse($token, $secretKey);
+        return EnqueueToken::parse($token, $secretKey);
     }
 }
