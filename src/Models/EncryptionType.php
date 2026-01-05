@@ -1,5 +1,8 @@
 <?php
+
 namespace QueueIT\QueueToken\Models;
-class EncryptionType {
+
+class EncryptionType
+{
     const AES256 = 'AES256';
 }

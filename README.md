@@ -1,7 +1,6 @@
-
 # Queue-it Queue Token SDK for PHP
 
-The Queue-it Queue Token SDK is used to ensure that end users cannot enter the queue without a valid token and to be a container which can carry sensitive user information from integrating system into the queue.
+The `Queue-it` Queue Token SDK is used to ensure that end users cannot enter the queue without a valid token and to be a container which can carry sensitive user information from integrating system into the queue.
 
 ## The Token
 
@@ -40,30 +39,32 @@ Both header and payload are in JSON format.
 {
   "r": 0.4578,
   "k": "XKDI42W",
-  "cd": { "size": "medium" }
+  "cd": { "size": "medium" },
+  "o": ""
 }
 ```
 
 - `r`: The relative quality of the key. Must be a decimal value. Used for determining the quality of the token. Optional
 - `k`: A unique key that holds value to the integrating system (e.g. email or user id). Used to restrict users from issuing multiple queue ids. Optional.
 - `cd`: Any custom data of the user. This is a set of key-value pairs. Optional
+- `o`: Origin. A string representing he origin who is using this EnqueueToken. Optional
 
 ## Usage
 
-```javascript
+```php
 const secretKey = '...';
 const token = Token
-    .Enqueue("ticketania")
-    .WithPayload(Payload
-        .Enqueue()
-        .WithKey("XKDI42W")
-        .WithRelativeQuality(0.4578)
-        .WithCustomData("size", "medium")
-        .Generate())
-    .WithEventId("demoevent")
-    .WithIpAddress("75.86.129.4", "45.67.2.4,34.56.3.2")
-    .WithValidity(60000)
-    .Generate(secretKey);
+    .enqueue("ticketania")
+    .withPayload(Payload
+        .enqueue()
+        .withKey("XKDI42W")
+        .withRelativeQuality(0.4578)
+        .withCustomData("size", "medium")
+        .generate())
+    .withEventId("demoevent")
+    .withIpAddress("75.86.129.4", "45.67.2.4,34.56.3.2")
+    .withValidity(60000)
+    .generate(secretKey);
 
 const tokenValue = token.Token;
 ```
@@ -72,11 +73,11 @@ const tokenValue = token.Token;
 
 A prefix for the token identifier can optionally be provided to restrict the user session after getting through the queue to the one used before entering the queue. Once the user is through the queue the token identifier is provided to the target application in the Known User token. The format of the token identifier is then `[YOUR PREFIX]~[GUID]`, e.g: AnfTDnpwazllYmnmgaCJ8tErV80YHv77ni5NgqQNhfWwxNqrNcHb~e937ef0d-48ec-4ff7-866e-52033273cb3d.
 
-```javascript
+```php
 const tokenIdentifierPrefix = "AnfTDnpwazllYmnmgaCJ8tErV80YHv77ni5NgqQNhfWwxNqrNcHb";
 const token = Token
-    .Enqueue("ticketania", tokenIdentifierPrefix)
-    .Generate(secretKey);
+    .enqueue("ticketania", tokenIdentifierPrefix)
+    .generate(secretKey);
 
 const tokenIdentifier = token.TokenIdentifier;
 // tokenIdentifier example: AnfTDnpwazllYmnmgaCJ8tErV80YHv77ni5NgqQNhfWwxNqrNcHb~e937ef0d-48ec-4ff7-866e-52033273cb3d

@@ -1,14 +1,47 @@
 {
-    "require-dev": {
-        "phpunit/phpunit": "^11.4"
-    },
-    "autoload": {
-    "psr-4": {
-      "QueueIT\\": "src/"
+  "name": "queueit/queuetoken-v1-php",
+  "version": "",
+  "description": "Queue-it PHP queue token library for managing enqueue tokens",
+  "type": "library",
+  "keywords": [
+    "queue",
+    "queueit",
+    "queue-token",
+    "enqueue-token",
+    "traffic-management"
+  ],
+  "homepage": "https://queue-it.com",
+  "license": "LGPL-3.0",
+  "authors": [
+    {
+      "name": "Queue-it",
+      "email": "support@queue-it.com"
     }
-  },
+  ],
   "require": {
+    "php": ">=7.4",
     "ext-json": "*",
     "ext-openssl": "*"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^9.5"
+  },
+  "autoload": {
+    "psr-4": {
+      "QueueIT\\QueueToken\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "QueueIT\\QueueToken\\Tests\\": "tests/"
+    }
+  },
+  "extra": {
+    "branch-alias": {
+      "dev-main": "1.x-dev"
+    }
+  },
+  "scripts": {
+    "test": "vendor\\bin\\phpunit tests --testdox"
   }
 }

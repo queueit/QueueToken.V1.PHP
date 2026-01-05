@@ -2,59 +2,75 @@
 
 namespace QueueIT\QueueToken\Models;
 
-use QueueIT\Helpers\Base64UrlEncoding;
-class HeaderDto {
-    public $TokenVersion;
-    public $Encryption;
-    public $Issued;  //Epoch Time in milliseconds
-    public $Expires; //Epoch Time in milliseconds
-    public $TokenIdentifier;
-    public $CustomerId;
-    public $EventId;
-    public $IpAddress;
-    public $XForwardedFor;
+use QueueIT\QueueToken\Helpers\Base64UrlEncoding;
 
-    public static function DeserializeHeader($input) {
-        $decoded = Base64UrlEncoding::Decode($input); // Assume Base64::decode works similarly to the TypeScript version
+class HeaderDto
+{
+    public ?string $tokenVersion;
+    public ?string $encryption;
+    public ?int $issued; // Epoch Time in milliseconds
+    public ?int $expires; // Epoch Time in milliseconds
+    public ?string $tokenIdentifier;
+    public ?string $customerId;
+    public ?string $eventId;
+    public ?string $ipAddress;
+    public ?string $xForwardedFor;
+
+    public static function deserializeHeader(string $input): HeaderDto
+    {
+        $decoded = Base64UrlEncoding::decode($input);
         $jsonData = json_decode($decoded, true);
+
+        // Validate required fields exist
+        if (
+            !isset($jsonData['typ']) || !isset($jsonData['enc']) || !isset($jsonData['iss'])
+            || !isset($jsonData['ti']) || !isset($jsonData['c'])
+        ) {
+            throw new \QueueIT\QueueToken\Exceptions\ArgumentException("Invalid token header: missing required fields");
+        }
+
         $header = new HeaderDto();
-        $header->TokenVersion = $jsonData['typ'];
-        $header->Encryption = $jsonData['enc'];
-        $header->Issued = $jsonData['iss'];
-        $header->Expires = $jsonData['exp'] ?? null;
-        $header->TokenIdentifier = $jsonData['ti'];
-        $header->CustomerId = $jsonData['c'];
-        $header->EventId = $jsonData['e'];
-        $header->IpAddress = $jsonData['ip'];
-        $header->XForwardedFor = $jsonData['xff'];
+        // Required fields - must be present
+        $header->tokenVersion = $jsonData['typ'];
+        $header->encryption = $jsonData['enc'];
+        $header->issued = $jsonData['iss'];
+        $header->tokenIdentifier = $jsonData['ti'];
+        $header->customerId = $jsonData['c'];
+
+        // Optional fields - use null coalescing
+        $header->expires = $jsonData['exp'] ?? null;
+        $header->eventId = $jsonData['e'] ?? null;
+        $header->ipAddress = $jsonData['ip'] ?? null;
+        $header->xForwardedFor = $jsonData['xff'] ?? null;
 
         return $header;
     }
 
-    public function Serialize(): string {
+    public function serialize(): string
+    {
         $obj = [
-            'typ' => $this->TokenVersion,
-            'enc' => $this->Encryption,
-            'iss' => $this->Issued,
+            'typ' => $this->tokenVersion,
+            'enc' => $this->encryption,
+            'iss' => $this->issued,
         ];
-        
-        if ($this->Expires !== null) {
-            $obj['exp'] = $this->Expires;
-        }
-        $obj['ti'] = $this->TokenIdentifier;
-        $obj['c'] = $this->CustomerId;
 
-        if ($this->EventId !== null) {
-            $obj['e'] = $this->EventId;
+        if ($this->expires !== null) {
+            $obj['exp'] = $this->expires;
         }
-        if ($this->IpAddress !== null) {
-            $obj['ip'] = $this->IpAddress;
+        $obj['ti'] = $this->tokenIdentifier;
+        $obj['c'] = $this->customerId;
+
+        if ($this->eventId !== null) {
+            $obj['e'] = $this->eventId;
         }
-        if ($this->XForwardedFor !== null) {
-            $obj['xff'] = $this->XForwardedFor;
+        if ($this->ipAddress !== null) {
+            $obj['ip'] = $this->ipAddress;
+        }
+        if ($this->xForwardedFor !== null) {
+            $obj['xff'] = $this->xForwardedFor;
         }
 
         $jsonData = json_encode($obj);
-        return Base64UrlEncoding::Encode($jsonData);
+        return Base64UrlEncoding::encode($jsonData);
     }
 }

@@ -1,6 +1,6 @@
 <?php
 
-namespace QueueIT\Helpers;
+namespace QueueIT\QueueToken\Helpers;
 
 use DateTime;
 use DateTimeZone;
@@ -8,61 +8,43 @@ use DateTimeZone;
 class Utils
 {
 
-    public static function maxDate()
+    public static function maxDate(): DateTime
     {
-        $maxUtcDate = new DateTime('9999-12-31 23:59:59.999', new DateTimeZone('UTC'));
-        return $maxUtcDate->getTimestamp() * 1000;
+        return new DateTime('9999-12-31 23:59:59.999', new DateTimeZone('UTC'));
     }
 
-    public static function utcNow()
+    public static function utcNow(): DateTime
     {
-        $utcNow = new DateTime('now', new DateTimeZone('UTC'));
-        return $utcNow->getTimestamp() * 1000;
+        return new DateTime('now', new DateTimeZone('UTC'));
     }
 
-    public static function padRight($str, $padding, $stringSize)
+    public static function padRight(string $str, string $padding, int $stringSize): string
     {
-        while (strlen($str) < $stringSize) {
-            $str .= $padding;
-        }
-        return $str;
+        return str_pad($str, $stringSize, $padding, STR_PAD_RIGHT);
     }
 
-    // Based on REF 4122 section 4.4 http://www.ietf.org/rfc/rfc4122.txt
-    public static function generateUUID()
+    public static function generateUUID(): string
     {
-        $s = [];
-        $hexDigits = "0123456789abcdef";
-        for ($i = 0; $i < 36; $i++) {
-            $s[$i] = substr($hexDigits, rand(0, 15), 1);
-        }
-        $s[14] = "4";  // bits 12-15 of the time_hi_and_version field to 0010
-        $s[19] = substr($hexDigits, (hexdec($s[19]) & 0x3) | 0x8, 1); // bits 6-7 of the clock_seq_hi_and_reserved to 01
-        $s[8] = $s[13] = $s[18] = $s[23] = "-";
-
-        return implode("", $s);
+        // Use PHP's built-in random_bytes for cryptographically secure UUID v4
+        $data = random_bytes(16);
+        $data[6] = chr(ord($data[6]) & 0x0f | 0x40); // Set version to 0100
+        $data[8] = chr(ord($data[8]) & 0x3f | 0x80); // Set bits 6-7 to 10
+        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
     }
 
-    public static function uint8ArrayToHexString($byteArray)
+    public static function uint8ArrayToHexString(array $byteArray): string
     {
-        $acc = '';
-        foreach ($byteArray as $val) {
-            $acc .= str_pad(dechex($val), 2, '0', STR_PAD_LEFT);
-        }
-        return $acc;
+        return bin2hex(implode(array_map('chr', $byteArray)));
     }
 
-    public static function uint8ArrayToString($array)
+    public static function uint8ArrayToString(array $array): string
     {
-        $out = '';
-        $out = implode(array_map('chr', $array));
-        return $out;
+        return implode(array_map('chr', $array));
     }
 
-    public static function stringToUint8Array($value)
+    public static function stringToUint8Array(string $value): array
     {
         $encoded = urlencode($value);
         return array_map('ord', str_split($encoded));
     }
-
 }

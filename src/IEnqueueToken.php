@@ -4,17 +4,17 @@ namespace QueueIT\QueueToken;
 
 interface IEnqueueToken
 {
-    public function TokenIdentifier();
+    public function getTokenIdentifier(): string;
 
-    public function getPayload();
+    public function getPayload(): ?IEnqueueTokenPayload;
 
-    public function setPayload($payload);
+    public function setPayload(?IEnqueueTokenPayload $payload): void;
 
-    public function getTokenWithoutHash();
+    public function getTokenWithoutHash(): ?string;
 
-    public function getToken();
+    public function getToken(): string;
 
-    public function getHashCode();
+    public function getHashCode(): ?string;
 
-    public function setHashCode($hashCode);
+    public function setHashCode(?string $hashCode): void;
 }

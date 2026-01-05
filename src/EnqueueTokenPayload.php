@@ -2,129 +2,117 @@
 
 namespace QueueIT\QueueToken;
 
-require 'IEnqueueTokenPayload.php';
+use Exception;
 
+use QueueIT\QueueToken\Exceptions\TokenSerializationException;
+use QueueIT\QueueToken\Helpers\AESEncryption;
+use QueueIT\QueueToken\Helpers\Base64UrlEncoding;
 use QueueIT\QueueToken\Models\PayloadDto;
-use QueueIT\Helpers\AESEncryption;
-use QueueIT\Helpers\Base64UrlEncoding;
 use QueueIT\QueueToken\Models\TokenOrigin;
-
 
 class EnqueueTokenPayload implements IEnqueueTokenPayload
 {
-    private $_customData;
-    private $_key;
-    private $_relativeQuality;
-    private $_origin;
+    private array $customData;
+    private ?string $key;
+    private ?float $relativeQuality;
+    private string $origin;
 
-    public function __construct()
-    {
-        $this->_customData = [];
-        $this->_origin = TokenOrigin::CONNECTOR;
+    public function __construct(
+        ?string $key = null,
+        ?float $relativeQuality = null,
+        array $customData = [],
+        string $origin = TokenOrigin::CONNECTOR
+    ) {
+        $this->key = $key;
+        $this->relativeQuality = $relativeQuality;
+        $this->customData = $customData;
+        $this->origin = $origin;
     }
 
-    public function getKey()
+    public function getKey(): ?string
     {
-        return $this->_key;
+        return $this->key;
     }
 
-    private function setKey($value)
+    public function setKey(?string $value): EnqueueTokenPayload
     {
-        $this->_key = $value ?? null;
-    }
-
-    public function getCustomData()
-    {
-        return $this->_customData;
-    }
-
-    public function getRelativeQuality()
-    {
-        return $this->_relativeQuality;
-    }
-
-    private function setRelativeQuality($value)
-    {
-        $this->_relativeQuality = $value;
-    }
-
-    public function getTokenOrigin()
-    {
-        return $this->_origin ?? '';
-    }
-
-    public static function create($payload = null, $key = null, $relativeQuality = null, $customData = null, $origin = null)
-    {
-        $newPayload = new EnqueueTokenPayload();
-        $newPayload->setKey($key);
-
-        if ($payload) {
-            $newPayload->setRelativeQuality($payload->getRelativeQuality());
-            $newPayload->_customData = $payload->getCustomData();
-            if (!$key || strlen($key) == 0) {
-                $newPayload->setKey($payload->getKey());
-            }
-        }
-
-        if ($relativeQuality !== null) {
-            $newPayload->setRelativeQuality($relativeQuality);
-        }
-
-        if ($customData) {
-            $newPayload->_customData = $customData;
-        }
-
-        if ($origin) {
-            $newPayload->_origin = $origin;
-        }
-
-        return $newPayload;
-    }
-
-    public function AddCustomData($key, $value)
-    {
-        if (!$this->_customData) {
-            $this->_customData = [];
-        }
-        $this->_customData[$key] = $value;
+        $this->key = $value;
         return $this;
     }
 
-    public function AddTokenOrigin($origin)
+    public function getCustomData(): array
     {
-        $this->_origin = $origin ?? TokenOrigin::CONNECTOR;
+        return $this->customData;
+    }
+
+    public function setCustomData(array $customData): EnqueueTokenPayload
+    {
+        $this->customData = $customData;
         return $this;
     }
 
-    public function Serialize()
+    public function getRelativeQuality(): ?float
+    {
+        return $this->relativeQuality;
+    }
+
+    public function setRelativeQuality(?float $value): EnqueueTokenPayload
+    {
+        $this->relativeQuality = $value;
+        return $this;
+    }
+
+    public function getTokenOrigin(): string
+    {
+        return $this->origin;
+    }
+
+    public function setTokenOrigin(string $origin): EnqueueTokenPayload
+    {
+        $this->origin = $origin;
+        return $this;
+    }
+
+    public function addCustomData(string $key, $value): EnqueueTokenPayload
+    {
+        $this->customData[$key] = $value;
+        return $this;
+    }
+
+    public function serialize(): array
     {
         $dto = new PayloadDto();
-        $dto->Key = $this->getKey();
-        $dto->RelativeQuality = $this->getRelativeQuality();
-        $dto->CustomData = $this->getCustomData();
-        $dto->Origin = $this->getTokenOrigin();
+        $dto->key = $this->getKey();
+        $dto->relativeQuality = $this->getRelativeQuality();
+        $dto->customData = $this->getCustomData();
+        $dto->origin = $this->getTokenOrigin();
 
-        return $dto->Serialize();
+        return $dto->serialize();
     }
 
-    public static function Deserialize($input, $secretKey, $tokenIdentifier)
+    public static function deserialize(string $input, string $secretKey, string $tokenIdentifier): ?EnqueueTokenPayload
     {
-        $dto = PayloadDto::DeserializePayload($input, $secretKey, $tokenIdentifier);
-        return EnqueueTokenPayload::create(null, $dto->Key, $dto->RelativeQuality, $dto->CustomData, $dto->Origin);
+        $dto = PayloadDto::deserializePayload($input, $secretKey, $tokenIdentifier);
+        if ($dto === null) {
+            return null;
+        }
+
+        return new EnqueueTokenPayload(
+            $dto->key,
+            $dto->relativeQuality,
+            $dto->customData ?? [],
+            $dto->origin ?? TokenOrigin::CONNECTOR
+        );
     }
 
-    public function EncryptAndEncode($secretKey, $tokenIdentifier)
+    public function encryptAndEncode(string $secretKey, string $tokenIdentifier): string
     {
         try {
-            $serializedPayload = $this->Serialize();
-            $encrypted = AESEncryption::EncryptPayload($secretKey, $tokenIdentifier, $serializedPayload);
-            $base64 = Base64UrlEncoding::Encode($encrypted);
-            return $base64;
-
-            //return Base64::encode(new Uint8Array(unpack('C*', $encrypted)));
+            $serializedPayload = $this->serialize();
+            $encrypted = AESEncryption::encryptPayload($secretKey, $tokenIdentifier, $serializedPayload);
+            return Base64UrlEncoding::encode($encrypted);
         } catch (Exception $ex) {
-            throw new TokenSerializationException($ex->getMessage());
+            throw new TokenSerializationException($ex);
         }
     }
-
 }

@@ -2,45 +2,46 @@
 
 namespace QueueIT\QueueToken;
 
-require 'EnqueueTokenPayload.php';
-
 class EnqueueTokenPayloadGenerator
 {
-    private $_payload;
+    private $payload;
 
     public function __construct()
     {
-        $this->_payload = new EnqueueTokenPayload();
+        $this->payload = new EnqueueTokenPayload();
     }
 
-    public function WithKey($key)
+    public function withKey(string $key): self
     {
-        $this->_payload = EnqueueTokenPayload::create($this->_payload, $key);
+        $this->payload->setKey($key);
         return $this;
     }
 
-    public function WithRelativeQuality($relativeQuality)
+    public function withRelativeQuality(float $relativeQuality): self
     {
-        $this->_payload = EnqueueTokenPayload::create($this->_payload, null, $relativeQuality);
+        $this->payload->setRelativeQuality($relativeQuality);
         return $this;
     }
 
-    public function WithCustomData($key, $value)
+    public function withCustomData(string $key, string $value): self
     {
-        $this->_payload = EnqueueTokenPayload::create($this->_payload, null);
-        $this->_payload->AddCustomData($key, $value);
+        $this->payload->addCustomData($key, $value);
         return $this;
     }
 
-    public function WithOrigin($origin)
+    public function withOrigin(string $origin): self
     {
-        $this->_payload = EnqueueTokenPayload::create($this->_payload, null);
-        $this->_payload->AddTokenOrigin($origin);
+        $this->payload->setTokenOrigin($origin);
         return $this;
     }
 
-    public function Generate()
+    public function generate(): IEnqueueTokenPayload
     {
-        return $this->_payload;
+        return new EnqueueTokenPayload(
+            $this->payload->getKey(),
+            $this->payload->getRelativeQuality(),
+            $this->payload->getCustomData(),
+            $this->payload->getTokenOrigin()
+        );
     }
 }

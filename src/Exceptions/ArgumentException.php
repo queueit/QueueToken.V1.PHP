@@ -6,8 +6,5 @@ use Exception;
 
 class ArgumentException extends Exception
 {
-    public function __construct($message)
-    {
-        parent::__construct($message);
-    }
+    // Uses parent constructor directly - no need for custom constructor
 }

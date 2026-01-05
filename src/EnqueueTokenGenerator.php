@@ -4,52 +4,62 @@ namespace QueueIT\QueueToken;
 
 use DateTime;
 
-require 'EnqueueToken.php';
 class EnqueueTokenGenerator
 {
-    private EnqueueToken $_token;
+    private EnqueueToken $token;
 
-    public function __construct($customerId, $tokenIdentifierPrefix = null)
+    public function __construct(string $customerId, ?string $tokenIdentifierPrefix = null)
     {
-        $this->_token = new EnqueueToken($customerId, $tokenIdentifierPrefix);
+        $this->token = new EnqueueToken($customerId, $tokenIdentifierPrefix);
     }
 
-    public function WithEventId($eventId): EnqueueTokenGenerator
+    public function withEventId(string $eventId): self
     {
-        $this->_token = EnqueueToken::AddEventId($this->_token, $eventId);
+        $this->token->eventId = $eventId;
         return $this;
     }
 
-    public function WithValidity($validityMilliSeconds): EnqueueTokenGenerator
+    public function withValidity(int $validityMilliSeconds): self
     {
-        $issuedEpochInMilliSeconds = $this->_token->Issued->getTimestamp() * 1000;
-        $newEpochTimeInSeconds = ($issuedEpochInMilliSeconds + $validityMilliSeconds) / 1000;
-        $newIssuedTime = DateTime::createFromFormat('U.u', sprintf('%.6f', $newEpochTimeInSeconds));
-        $this->_token = EnqueueToken::AddExpires($this->_token, $newIssuedTime);
+        $currentTimestamp = $this->token->issued->getTimestamp();
+        $expiryTimestamp = $currentTimestamp + ($validityMilliSeconds / 1000);
+        $this->token->expires = (new DateTime())->setTimestamp($expiryTimestamp);
         return $this;
     }
 
-    public function WithValidityDate($validity): EnqueueTokenGenerator
+    public function withValidityDate(DateTime $validity): self
     {
-        $this->_token = EnqueueToken::AddExpiresWithDate($this->_token, $validity);
+        $this->token->expires = $validity;
         return $this;
     }
 
-    public function WithPayload($payload): EnqueueTokenGenerator
+    public function withPayload(IEnqueueTokenPayload $payload): self
     {
-        $this->_token = EnqueueToken::AddPayload($this->_token, $payload);
+        $this->token->setPayload($payload);
         return $this;
     }
 
-    public function WithIpAddress($ip, $xForwardedFor): EnqueueTokenGenerator
+    public function withIpAddress(string $ip, ?string $xForwardedFor): self
     {
-        $this->_token = EnqueueToken::AddIPAddress($this->_token, $ip, $xForwardedFor);
+        $this->token->ipAddress = $ip;
+        $this->token->xForwardedFor = $xForwardedFor;
         return $this;
     }
 
-    public function Generate($secretKey): IEnqueueToken
+    public function generate(string $secretKey): IEnqueueToken
     {
-        $this->_token->Generate($secretKey);
-        return $this->_token;
+        $this->token->generate($secretKey);
+        $clone = $this->token;
+        $this->token = EnqueueToken::create( // create a new instance, so that subsequent calls to Generate do not modify the previous one
+            $this->token->getTokenIdentifier(),
+            $this->token->customerId,
+            $this->token->eventId,
+            $this->token->issued,
+            $this->token->expires,
+            $this->token->ipAddress,
+            $this->token->xForwardedFor,
+            $this->token->getPayload()
+        );
+        return $clone;
     }
 }
