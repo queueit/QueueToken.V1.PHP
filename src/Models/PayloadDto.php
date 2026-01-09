@@ -17,7 +17,7 @@ class PayloadDto
     {
         $obj = [
             'r' => $this->relativeQuality,
-            'k' => $this->key ?? "",
+            'k' => $this->key ?? null,
         ];
 
         if (!empty($this->customData)) {

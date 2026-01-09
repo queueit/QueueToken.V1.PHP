@@ -188,7 +188,7 @@ class EnqueueTokenPayloadTest extends TestCase
 
     public function testSerializeRelativeQualityOnly()
     {
-        $expectedJson = '{"r":0.456,"k":"","o":"Connector"}';
+        $expectedJson = '{"r":0.456,"k":null,"o":"Connector"}';
 
         $instance = Payload::enqueue()
             ->withRelativeQuality(0.456)
@@ -200,7 +200,7 @@ class EnqueueTokenPayloadTest extends TestCase
 
     public function testSerializeCustomDataOnly()
     {
-        $expectedJson = '{"r":null,"k":"","cd":{"key1":"Value1"},"o":"Connector"}';
+        $expectedJson = '{"r":null,"k":null,"cd":{"key1":"Value1"},"o":"Connector"}';
 
         $instance = Payload::enqueue()
             ->withCustomData("key1", "Value1")
@@ -212,7 +212,7 @@ class EnqueueTokenPayloadTest extends TestCase
 
     public function testSerializeCustomDataEscaped()
     {
-        $expectedJson = '{"r":null,"k":"","cd":{"ke\"y1":"Va\"lue1"},"o":"Connector"}';
+        $expectedJson = '{"r":null,"k":null,"cd":{"ke\"y1":"Va\"lue1"},"o":"Connector"}';
 
         $instance = Payload::enqueue()
             ->withCustomData('ke"y1', 'Va"lue1')
