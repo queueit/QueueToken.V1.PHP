@@ -13,6 +13,7 @@ use QueueIT\QueueToken\Helpers\Utils;
 use QueueIT\QueueToken\Models\TokenVersion;
 use QueueIT\QueueToken\Models\EncryptionType;
 use QueueIT\QueueToken\Models\HeaderDto;
+use QueueIT\QueueToken\Models\TokenOrigin;
 
 use QueueIT\QueueToken\Tests\SampleTokenValues;
 
@@ -388,5 +389,98 @@ class EnqueueTokenTest extends TestCase
 
         $parsedToken1 = Token::parse($token1String, SampleTokenValues::$secretKey);
         $this->assertEquals("event1", $parsedToken1->eventId);
+    }
+
+    public function testCreateTokenWithInviteOnlyOriginAndParse()
+    {
+        $secret = SampleTokenValues::$secretKey;
+
+        $payload = Payload::enqueue()
+            ->withKey('TestKey')
+            ->withRelativeQuality(0.5)
+            ->withOrigin(TokenOrigin::INVITE_ONLY)
+            ->generate();
+
+        $token = Token::enqueue(SampleTokenValues::$customerId)
+            ->withPayload($payload)
+            ->withEventId('testevent')
+            ->generate($secret);
+
+        $tokenString = $token->getToken();
+        $parsed = Token::parse($tokenString, $secret);
+
+        $this->assertNotNull($parsed->getPayload());
+        $this->assertEquals(TokenOrigin::INVITE_ONLY, $parsed->getPayload()->getTokenOrigin());
+        $this->assertEquals('TestKey', $parsed->getPayload()->getKey());
+        $this->assertEquals(0.5, $parsed->getPayload()->getRelativeQuality());
+    }
+
+    public function testCreateTokenWithAkamaiBotManagerOriginAndParse()
+    {
+        $secret = SampleTokenValues::$secretKey;
+
+        $payload = Payload::enqueue()
+            ->withKey('BotManagerKey')
+            ->withRelativeQuality(0.75)
+            ->withCustomData('detector', 'bot-manager')
+            ->withOrigin(TokenOrigin::AKAMAI_BOT_MANAGER_HEADER_VALIDATOR)
+            ->generate();
+
+        $token = Token::enqueue(SampleTokenValues::$customerId)
+            ->withPayload($payload)
+            ->withEventId('bot-test-event')
+            ->generate($secret);
+
+        $tokenString = $token->getToken();
+        $parsed = Token::parse($tokenString, $secret);
+
+        $this->assertNotNull($parsed->getPayload());
+        $this->assertEquals(TokenOrigin::AKAMAI_BOT_MANAGER_HEADER_VALIDATOR, $parsed->getPayload()->getTokenOrigin());
+        $this->assertEquals('BotManagerKey', $parsed->getPayload()->getKey());
+        $this->assertEquals(0.75, $parsed->getPayload()->getRelativeQuality());
+        $this->assertEquals('bot-manager', $parsed->getPayload()->getCustomData()['detector']);
+    }
+
+    public function testCreateTokenWithConnectorOriginAndParse()
+    {
+        $secret = SampleTokenValues::$secretKey;
+
+        $payload = Payload::enqueue()
+            ->withKey('ConnectorKey')
+            ->withRelativeQuality(0.25)
+            ->withOrigin(TokenOrigin::CONNECTOR)
+            ->generate();
+
+        $token = Token::enqueue(SampleTokenValues::$customerId)
+            ->withPayload($payload)
+            ->withEventId('connector-event')
+            ->generate($secret);
+
+        $tokenString = $token->getToken();
+        $parsed = Token::parse($tokenString, $secret);
+
+        $this->assertNotNull($parsed->getPayload());
+        $this->assertEquals(TokenOrigin::CONNECTOR, $parsed->getPayload()->getTokenOrigin());
+        $this->assertEquals('ConnectorKey', $parsed->getPayload()->getKey());
+        $this->assertEquals(0.25, $parsed->getPayload()->getRelativeQuality());
+    }
+
+    public function testTokenOriginDefaultsToConnector()
+    {
+        $secret = SampleTokenValues::$secretKey;
+
+        $payload = Payload::enqueue()
+            ->withKey('DefaultKey')
+            ->generate();
+
+        $token = Token::enqueue(SampleTokenValues::$customerId)
+            ->withPayload($payload)
+            ->generate($secret);
+
+        $tokenString = $token->getToken();
+        $parsed = Token::parse($tokenString, $secret);
+
+        $this->assertNotNull($parsed->getPayload());
+        $this->assertEquals(TokenOrigin::CONNECTOR, $parsed->getPayload()->getTokenOrigin());
     }
 }

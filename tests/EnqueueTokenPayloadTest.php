@@ -7,6 +7,7 @@ use PHPUnit\Framework\TestCase;
 use QueueIT\QueueToken\Helpers\Utils;
 use QueueIT\QueueToken\Payload;
 use QueueIT\QueueToken\EnqueueTokenPayload;
+use QueueIT\QueueToken\Models\TokenOrigin;
 
 class EnqueueTokenPayloadTest extends TestCase
 {
@@ -242,5 +243,121 @@ class EnqueueTokenPayloadTest extends TestCase
 
         $this->assertEquals($expectedEncryptedPayload, $actualEncryptedPayload);
         $this->assertEquals($payload, $decryptPayload);
+    }
+
+    public function testGeneratePayloadWithInviteOnlyOrigin()
+    {
+        $expectedKey = "myKey";
+        $expectedOrigin = TokenOrigin::INVITE_ONLY;
+
+        $instance = Payload::Enqueue()
+            ->WithKey($expectedKey)
+            ->WithOrigin($expectedOrigin)
+            ->Generate();
+
+        $this->assertEquals($expectedKey, $instance->getKey());
+        $this->assertEquals($expectedOrigin, $instance->getTokenOrigin());
+    }
+
+    public function testGeneratePayloadWithAkamaiBotManagerHeaderValidatorOrigin()
+    {
+        $expectedKey = "myKey";
+        $expectedOrigin = TokenOrigin::AKAMAI_BOT_MANAGER_HEADER_VALIDATOR;
+
+        $instance = Payload::Enqueue()
+            ->WithKey($expectedKey)
+            ->WithOrigin($expectedOrigin)
+            ->Generate();
+
+        $this->assertEquals($expectedKey, $instance->getKey());
+        $this->assertEquals($expectedOrigin, $instance->getTokenOrigin());
+    }
+
+    public function testGeneratePayloadWithConnectorOrigin()
+    {
+        $expectedKey = "myKey";
+        $expectedOrigin = TokenOrigin::CONNECTOR;
+
+        $instance = Payload::Enqueue()
+            ->WithKey($expectedKey)
+            ->WithOrigin($expectedOrigin)
+            ->Generate();
+
+        $this->assertEquals($expectedKey, $instance->getKey());
+        $this->assertEquals($expectedOrigin, $instance->getTokenOrigin());
+    }
+
+    public function testSerializeWithInviteOnlyOrigin()
+    {
+        $expectedJson = '{"r":0.456,"k":"myKey","o":"InviteOnly"}';
+
+        $instance = Payload::Enqueue()
+            ->WithKey("myKey")
+            ->WithRelativeQuality(0.456)
+            ->WithOrigin(TokenOrigin::INVITE_ONLY)
+            ->Generate();
+        $actualJson = Utils::uint8ArrayToString($instance->Serialize());
+
+        $this->assertEquals($expectedJson, $actualJson);
+    }
+
+    public function testSerializeWithAkamaiBotManagerHeaderValidatorOrigin()
+    {
+        $expectedJson = '{"r":0.456,"k":"myKey","o":"AkamaiBotManagerHeaderValidator"}';
+
+        $instance = Payload::Enqueue()
+            ->WithKey("myKey")
+            ->WithRelativeQuality(0.456)
+            ->WithOrigin(TokenOrigin::AKAMAI_BOT_MANAGER_HEADER_VALIDATOR)
+            ->Generate();
+        $actualJson = Utils::uint8ArrayToString($instance->Serialize());
+
+        $this->assertEquals($expectedJson, $actualJson);
+    }
+
+    public function testSerializeWithConnectorOrigin()
+    {
+        $expectedJson = '{"r":0.456,"k":"myKey","o":"Connector"}';
+
+        $instance = Payload::Enqueue()
+            ->WithKey("myKey")
+            ->WithRelativeQuality(0.456)
+            ->WithOrigin(TokenOrigin::CONNECTOR)
+            ->Generate();
+        $actualJson = Utils::uint8ArrayToString($instance->Serialize());
+
+        $this->assertEquals($expectedJson, $actualJson);
+    }
+
+    public function testSerializeWithInviteOnlyOriginAndCustomData()
+    {
+        $expectedJson = '{"r":0.456,"k":"myKey","cd":{"key1":"Value1","key2":"Value2"},"o":"InviteOnly"}';
+
+        $instance = Payload::Enqueue()
+            ->WithKey("myKey")
+            ->WithRelativeQuality(0.456)
+            ->WithCustomData("key1", "Value1")
+            ->WithCustomData("key2", "Value2")
+            ->WithOrigin(TokenOrigin::INVITE_ONLY)
+            ->Generate();
+        $actualJson = Utils::uint8ArrayToString($instance->Serialize());
+
+        $this->assertEquals($expectedJson, $actualJson);
+    }
+
+    public function testSerializeWithAkamaiBotManagerOriginAndCustomData()
+    {
+        $expectedJson = '{"r":0.456,"k":"myKey","cd":{"key1":"Value1","key2":"Value2"},"o":"AkamaiBotManagerHeaderValidator"}';
+
+        $instance = Payload::Enqueue()
+            ->WithKey("myKey")
+            ->WithRelativeQuality(0.456)
+            ->WithCustomData("key1", "Value1")
+            ->WithCustomData("key2", "Value2")
+            ->WithOrigin(TokenOrigin::AKAMAI_BOT_MANAGER_HEADER_VALIDATOR)
+            ->Generate();
+        $actualJson = Utils::uint8ArrayToString($instance->Serialize());
+
+        $this->assertEquals($expectedJson, $actualJson);
     }
 }
