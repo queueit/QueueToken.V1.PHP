@@ -1,0 +1,55 @@
+# .github/workflows/release-pr.yml
+# Lives in the queueit/QueueToken.V1.PHP GitHub repository (commit it to main once).
+#
+# When the Azure DevOps release pipeline pushes a release/* branch, this
+# workflow opens the pull request to main using the workflow's built-in
+# GITHUB_TOKEN — no PAT or stored secret on either side.
+#
+# The PR title/body are taken from the pushed commit's subject/body, which the
+# pipeline sets to "Release <version>" + the ReleaseNotes parameter.
+#
+# One-time repo setting required:
+#   Settings → Actions → General → Workflow permissions →
+#   ✔ "Allow GitHub Actions to create and approve pull requests"
+
+name: Open release pull request
+
+on:
+  push:
+    branches:
+      - 'release/**'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  open-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create pull request to main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          # Skip if an open PR for this branch already exists (e.g. re-run of a push)
+          existing=$(gh pr list --repo "$GITHUB_REPOSITORY" \
+            --head "$GITHUB_REF_NAME" --base main --state open \
+            --json number --jq 'length')
+          if [ "$existing" -gt 0 ]; then
+            echo "An open pull request for $GITHUB_REF_NAME already exists — skipping."
+            exit 0
+          fi
+
+          TITLE=$(git log -1 --pretty=%s)
+          BODY=$(git log -1 --pretty=%b)
+
+          gh pr create --repo "$GITHUB_REPOSITORY" \
+            --head "$GITHUB_REF_NAME" \
+            --base main \
+            --title "${TITLE:-Release $GITHUB_REF_NAME}" \
+            --body "${BODY:-Automated release pull request.}"
