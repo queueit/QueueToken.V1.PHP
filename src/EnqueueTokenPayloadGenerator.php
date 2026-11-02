@@ -4,7 +4,7 @@ namespace QueueIT\QueueToken;
 
 class EnqueueTokenPayloadGenerator
 {
-    private $payload;
+    private EnqueueTokenPayload $payload;
 
     public function __construct()
     {

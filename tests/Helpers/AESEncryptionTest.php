@@ -40,6 +40,17 @@ class AESEncryptionTest extends TestCase
         $this->assertEquals($originalText, $decryptedText);
     }
 
+    public function testShouldThrowWhenDataIsNotACipherText()
+    {
+        $keyString = "123456789012345678901234567890123456789012345678901234567890123";
+        $tokenIdentifier = "1234567890123456";
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage("Decryption failed.");
+
+        AESEncryption::decryptPayload($keyString, $tokenIdentifier, "not a cipher block");
+    }
+
     public function testMD5IVGeneration()
     {
         // Test MD5 IV generation (PHP-specific implementation detail with real value)

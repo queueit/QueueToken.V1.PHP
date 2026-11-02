@@ -12,21 +12,12 @@ use QueueIT\QueueToken\Models\TokenOrigin;
 
 class EnqueueTokenPayload implements IEnqueueTokenPayload
 {
-    private array $customData;
-    private ?string $key;
-    private ?float $relativeQuality;
-    private string $origin;
-
     public function __construct(
-        ?string $key = null,
-        ?float $relativeQuality = null,
-        array $customData = [],
-        string $origin = TokenOrigin::CONNECTOR
+        private ?string $key = null,
+        private ?float $relativeQuality = null,
+        private array $customData = [],
+        private string $origin = TokenOrigin::CONNECTOR
     ) {
-        $this->key = $key;
-        $this->relativeQuality = $relativeQuality;
-        $this->customData = $customData;
-        $this->origin = $origin;
     }
 
     public function getKey(): ?string
@@ -73,7 +64,7 @@ class EnqueueTokenPayload implements IEnqueueTokenPayload
         return $this;
     }
 
-    public function addCustomData(string $key, $value): EnqueueTokenPayload
+    public function addCustomData(string $key, mixed $value): EnqueueTokenPayload
     {
         $this->customData[$key] = $value;
         return $this;
@@ -90,7 +81,7 @@ class EnqueueTokenPayload implements IEnqueueTokenPayload
         return $dto->serialize();
     }
 
-    public static function deserialize(string $input, string $secretKey, string $tokenIdentifier): ?EnqueueTokenPayload
+    public static function deserialize(string $input, #[\SensitiveParameter] string $secretKey, string $tokenIdentifier): ?EnqueueTokenPayload
     {
         $dto = PayloadDto::deserializePayload($input, $secretKey, $tokenIdentifier);
         if ($dto === null) {
@@ -105,7 +96,7 @@ class EnqueueTokenPayload implements IEnqueueTokenPayload
         );
     }
 
-    public function encryptAndEncode(string $secretKey, string $tokenIdentifier): string
+    public function encryptAndEncode(#[\SensitiveParameter] string $secretKey, string $tokenIdentifier): string
     {
         try {
             $serializedPayload = $this->serialize();

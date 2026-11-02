@@ -12,7 +12,7 @@ interface IEnqueueTokenPayload
 
     public function getTokenOrigin(): string;
 
-    public function encryptAndEncode(string $secretKey, string $tokenIdentifier): string;
+    public function encryptAndEncode(#[\SensitiveParameter] string $secretKey, string $tokenIdentifier): string;
 
     public function serialize(): array;
 }

@@ -9,7 +9,7 @@ class Token
         return new EnqueueTokenGenerator($customerId, $tokenIdentifierPrefix);
     }
 
-    public static function parse(string $token, string $secretKey): IEnqueueToken
+    public static function parse(string $token, #[\SensitiveParameter] string $secretKey): IEnqueueToken
     {
         return EnqueueToken::parse($token, $secretKey);
     }

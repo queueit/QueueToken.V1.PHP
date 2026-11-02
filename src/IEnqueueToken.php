@@ -2,6 +2,8 @@
 
 namespace QueueIT\QueueToken;
 
+use QueueIT\QueueToken\IEnqueueTokenPayload;
+
 interface IEnqueueToken
 {
     public function getTokenIdentifier(): string;
