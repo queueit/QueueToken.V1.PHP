@@ -6,7 +6,7 @@
 # GITHUB_TOKEN — no PAT or stored secret on either side.
 #
 # The PR title/body are taken from the pushed commit's subject/body, which the
-# pipeline sets to "Release <version>" + the ReleaseNotes parameter.
+# pipeline sets to "Release <version>" + docs/release-notes/<version>.md.
 #
 # One-time repo setting required:
 #   Settings → Actions → General → Workflow permissions →

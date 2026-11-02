@@ -1,5 +1,10 @@
 name: Final GitHub Release
 
+# Runs when the release PR opened by the Azure DevOps release pipeline is merged into main.
+# It tags the merged commit with the version in its composer.json and creates the GitHub
+# release; Packagist publishes the version when its GitHub hook sees the tag. Pushes to main
+# that do not change the version find the tag already there and release nothing.
+
 on:
   push:
     branches:
@@ -22,16 +27,29 @@ jobs:
         id: get_version
         run: |
           SDK_VERSION=$(jq -r '.version' composer.json)
-          if [ -z "$SDK_VERSION" ] || [ "$SDK_VERSION" = "null" ]; then
-            echo "composer.json .version is missing"
+          if ! [[ "$SDK_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
+            echo "composer.json .version '$SDK_VERSION' is not a valid version"
             exit 1
           fi
-          echo "SDK_VERSION=$SDK_VERSION" >> $GITHUB_ENV
+          echo "SDK_VERSION=$SDK_VERSION" >> "$GITHUB_ENV"
+          echo "TAG_NAME=v$SDK_VERSION" >> "$GITHUB_ENV"
           echo "Extracted SDK_VERSION: $SDK_VERSION"
+
+      # Only a commit that changes the version is a release
+      - name: Check whether this version is already tagged
+        id: tag_check
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG_NAME" > /dev/null; then
+            echo "$TAG_NAME already exists; this push is not a release."
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
 
       # Find the PR associated with this commit (merge, squash or rebase)
       - name: Get PR for this commit
         id: pr
+        if: steps.tag_check.outputs.exists == 'false'
         uses: actions/github-script@v7
         with:
           script: |
@@ -56,45 +74,56 @@ jobs:
 
       # Write PR body to file for body_path (handles multiline safely)
       - name: Write PR body to file
+        if: steps.tag_check.outputs.exists == 'false'
         run: |
           cat <<'EOF' > pr_body.md
           ${{ steps.pr.outputs.body }}
           EOF
 
       - name: Create release assets
+        if: steps.tag_check.outputs.exists == 'false'
         run: |
-          tar -czf php-token-v1-${{ env.SDK_VERSION }}.tar.gz \
-            src/ composer.json composer.lock README.md LICENSE CHANGELOG.md phpunit.xml
-          echo "Created archive: php-token-v1-${{ env.SDK_VERSION }}.tar.gz"
+          tar -czf "php-token-v1-$SDK_VERSION.tar.gz" \
+            src/ composer.json composer.lock README.md phpunit.xml
+          echo "Created archive: php-token-v1-$SDK_VERSION.tar.gz"
 
       - name: "Debug: Show release variables"
+        if: steps.tag_check.outputs.exists == 'false'
         run: |
           echo "=== DEBUG: Release Information ==="
-          echo "SDK_VERSION: ${{ env.SDK_VERSION }}"
+          echo "SDK_VERSION: $SDK_VERSION"
+          echo "TAG_NAME:    $TAG_NAME"
+          echo "COMMIT:      $GITHUB_SHA"
           echo "PR_NUMBER: ${{ steps.pr.outputs.number }}"
           echo "PR_TITLE:  ${{ steps.pr.outputs.title }}"
-          echo "Asset: php-token-v1-${{ env.SDK_VERSION }}.tar.gz"
+          echo "Asset: php-token-v1-$SDK_VERSION.tar.gz"
 
+      # A real push (not a tag created by the release API) so that Packagist's GitHub hook
+      # fires. Pushes with GITHUB_TOKEN do not start workflows, but they do send webhooks.
       - name: Create Git tag
+        if: steps.tag_check.outputs.exists == 'false'
         run: |
-          git config user.name "$QUEUEIT_GITHUB_NAME"
-          git config user.email "$QUEUEIT_GITHUB_EMAIL"
-          git tag "${{ env.SDK_VERSION }}"
-          git push origin "${{ env.SDK_VERSION }}"
+          git tag "$TAG_NAME" "$GITHUB_SHA"
+          git push origin "refs/tags/$TAG_NAME"
 
       - name: Create GitHub Release
+        if: steps.tag_check.outputs.exists == 'false'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ env.SDK_VERSION }}
-          name: ${{ env.SDK_VERSION }}
+          tag_name: ${{ env.TAG_NAME }}
+          target_commitish: ${{ github.sha }}
+          name: Release ${{ env.TAG_NAME }}
           body_path: pr_body.md
           files: php-token-v1-${{ env.SDK_VERSION }}.tar.gz
+          prerelease: ${{ contains(env.SDK_VERSION, '-') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Release verification links
+        if: steps.tag_check.outputs.exists == 'false'
         run: |
           echo "Release created. Check:"
           echo "- Tags: https://github.com/${{ github.repository }}/tags"
           echo "- Releases: https://github.com/${{ github.repository }}/releases"
-          echo "- Latest Release: https://github.com/${{ github.repository }}/releases/tag/${{ env.SDK_VERSION }}"
+          echo "- Latest Release: https://github.com/${{ github.repository }}/releases/tag/$TAG_NAME"
+          echo "- Packagist: https://packagist.org/packages/queueit/queuetoken-v1-php"
