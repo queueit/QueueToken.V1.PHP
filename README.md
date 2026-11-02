@@ -2,6 +2,13 @@
 
 The `Queue-it` Queue Token SDK is used to ensure that end users cannot enter the queue without a valid token and to be a container which can carry sensitive user information from integrating system into the queue.
 
+## Requirements
+
+- PHP 8.2 or later. The library is tested on PHP 8.2, 8.3, 8.4 and 8.5.
+- The OpenSSL extension (`ext-openssl`).
+
+Applications running PHP 7.4, 8.0 or 8.1 must stay on version 1.1.x. Composer selects it automatically on those PHP versions.
+
 ## The Token
 
 The token consists of two parts. Firstly, a header containing non-sensitive metadata. Secondly the payload of the token.
@@ -52,21 +59,22 @@ Both header and payload are in JSON format.
 ## Usage
 
 ```php
-const secretKey = '...';
-const token = Token
-    .enqueue("ticketania")
-    .withPayload(Payload
-        .enqueue()
-        .withKey("XKDI42W")
-        .withRelativeQuality(0.4578)
-        .withCustomData("size", "medium")
-        .generate())
-    .withEventId("demoevent")
-    .withIpAddress("75.86.129.4", "45.67.2.4,34.56.3.2")
-    .withValidity(60000)
-    .generate(secretKey);
+use QueueIT\QueueToken\Payload;
+use QueueIT\QueueToken\Token;
 
-const tokenValue = token.Token;
+$secretKey = '...';
+$token = Token::enqueue("ticketania")
+    ->withPayload(Payload::enqueue()
+        ->withKey("XKDI42W")
+        ->withRelativeQuality(0.4578)
+        ->withCustomData("size", "medium")
+        ->generate())
+    ->withEventId("demoevent")
+    ->withIpAddress("75.86.129.4", "45.67.2.4,34.56.3.2")
+    ->withValidity(60000)
+    ->generate($secretKey);
+
+$tokenValue = $token->getToken();
 ```
 
 ### Specifying token identifier prefix
@@ -74,13 +82,12 @@ const tokenValue = token.Token;
 A prefix for the token identifier can optionally be provided to restrict the user session after getting through the queue to the one used before entering the queue. Once the user is through the queue the token identifier is provided to the target application in the Known User token. The format of the token identifier is then `[YOUR PREFIX]~[GUID]`, e.g: AnfTDnpwazllYmnmgaCJ8tErV80YHv77ni5NgqQNhfWwxNqrNcHb~e937ef0d-48ec-4ff7-866e-52033273cb3d.
 
 ```php
-const tokenIdentifierPrefix = "AnfTDnpwazllYmnmgaCJ8tErV80YHv77ni5NgqQNhfWwxNqrNcHb";
-const token = Token
-    .enqueue("ticketania", tokenIdentifierPrefix)
-    .generate(secretKey);
+$tokenIdentifierPrefix = "AnfTDnpwazllYmnmgaCJ8tErV80YHv77ni5NgqQNhfWwxNqrNcHb";
+$token = Token::enqueue("ticketania", $tokenIdentifierPrefix)
+    ->generate($secretKey);
 
-const tokenIdentifier = token.TokenIdentifier;
-// tokenIdentifier example: AnfTDnpwazllYmnmgaCJ8tErV80YHv77ni5NgqQNhfWwxNqrNcHb~e937ef0d-48ec-4ff7-866e-52033273cb3d
+$tokenIdentifier = $token->getTokenIdentifier();
+// $tokenIdentifier example: AnfTDnpwazllYmnmgaCJ8tErV80YHv77ni5NgqQNhfWwxNqrNcHb~e937ef0d-48ec-4ff7-866e-52033273cb3d
 ```
 
 ## Serialized Token
@@ -88,7 +95,7 @@ const tokenIdentifier = token.TokenIdentifier;
 > eyJ0eXAiOiJRVDEiLCJlbmMiOiJBRVMyNTYiLCJpc3MiOjE1MzQ3MjMyMDAwMDAsImV4cCI6MTUzOTEyOTYwMDAwMCwidGkiOiJhMjFkNDIzYS00M2ZkLTQ4MjEtODRmYS00MzkwZjZhMmZkM2UiLCJjIjoidGlja2V0YW5pYSIsImUiOiJteWV2ZW50In0.0rDlI69F1Dx4Twps5qD4cQrbXbCRiezBd6fH1PVm6CnVY456FALkAhN3rgVrh_PGCJHcEXN5zoqFg65MH8WZc_CQdD63hJre3Sedu0-9zIs.aZgzkJm57etFaXjjME_-9LjOgPNTTqkp1aJ057HuEiU
 
 The format of the token is [header].[payload].[hash] where each part is Base64Url encoded.
-The payload is AES 256 encrypted with the secret key supplied in the `.Generate(secretKey)` method.
+The payload is AES 256 encrypted with the secret key supplied to the `generate($secretKey)` method.
 If the "e" key is provided in the header, the secret key on the event must be used.
 If no "e" key is provided the default key on the customer account must be used.
 The token is signed with SHA 256 using the same secret key.

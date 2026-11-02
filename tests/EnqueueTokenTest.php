@@ -8,11 +8,17 @@ use PHPUnit\Framework\TestCase;
 
 use QueueIT\QueueToken\Token;
 use QueueIT\QueueToken\EnqueueToken;
+use QueueIT\QueueToken\IEnqueueTokenPayload;
 use QueueIT\QueueToken\Payload;
+use QueueIT\QueueToken\Exceptions\ArgumentException;
+use QueueIT\QueueToken\Exceptions\InvalidHashException;
+use QueueIT\QueueToken\Exceptions\TokenDeserializationException;
+use QueueIT\QueueToken\Exceptions\TokenSerializationException;
 use QueueIT\QueueToken\Helpers\Utils;
 use QueueIT\QueueToken\Models\TokenVersion;
 use QueueIT\QueueToken\Models\EncryptionType;
 use QueueIT\QueueToken\Models\HeaderDto;
+use QueueIT\QueueToken\Models\TokenOrigin;
 
 use QueueIT\QueueToken\Tests\SampleTokenValues;
 
@@ -57,6 +63,15 @@ class EnqueueTokenTest extends TestCase
         $intervalInSeconds = $expectedValidity / 1000;
         $expectedExpiry = $token->issued->modify("+{$intervalInSeconds} seconds");
         $this->assertEquals($expectedExpiry->getTimestamp() * 1000, $token->expires->getTimestamp() * 1000);
+    }
+
+    public function testCreateTokenWithValidityInFractionalSecondsTruncatesToWholeSeconds()
+    {
+        $token = Token::enqueue(SampleTokenValues::$customerId)
+            ->withValidity(1500)
+            ->generate(SampleTokenValues::$secretKey);
+
+        $this->assertEquals($token->issued->getTimestamp() + 1, $token->expires->getTimestamp());
     }
 
     public function testCreateTokenWithValidityAsDate()
@@ -298,38 +313,39 @@ class EnqueueTokenTest extends TestCase
         $this->assertEquals($expectedSignedToken, $actualSignedToken);
     }
 
-    // public function testParseTokenWithAllFields()
-    // {
-    //     $tokenString = "eyJ0eXAiOiJRVDEiLCJlbmMiOiJBRVMyNTYiLCJpc3MiOiIxNzYxMDUxODYzMDAxIiwiZXhwIjoiMTc5MjU4NzU5MzAwMCIsInRpIjoiNzBjYzQwMTEtODUwNS00NjA0LWFkYmItY2NjNThiMzI5ZWQyIiwiYyI6InRpY2tldGFuaWEiLCJlIjoiYnV5dGlja2V0dG9rZW4iLCJpcCI6IjgyLjE5Mi4xNzMuMzgiLCJ4ZmYiOiI4OC4xOTIuMTczLjg4In0.qOaYmEZ0KQEjLKPgj2X5XfdbZCpQ1tamDJZaP_hxOXTS6IxEV9fa7_pgQQopPEvsqUd7_VPLMhJRN3u6iKCgisWMO7UlLy1kkUqR8eP1k4QBBFOwiD_KIpfXGcul9yIHjvzQAxWgz9pF-qsmhQQjvg.ZGq8lnP3P92FEkQs3OPoxk--ED77QGs7fAm_QPKNXCM";
+    public function testParseTokenWithAllFields()
+    {
+        $tokenString = "eyJ0eXAiOiJRVDEiLCJlbmMiOiJBRVMyNTYiLCJpc3MiOiIxNzYxMDUxODYzMDAxIiwiZXhwIjoiMTc5MjU4NzU5MzAwMCIsInRpIjoiNzBjYzQwMTEtODUwNS00NjA0LWFkYmItY2NjNThiMzI5ZWQyIiwiYyI6InRpY2tldGFuaWEiLCJlIjoiYnV5dGlja2V0dG9rZW4iLCJpcCI6IjgyLjE5Mi4xNzMuMzgiLCJ4ZmYiOiI4OC4xOTIuMTczLjg4In0.qOaYmEZ0KQEjLKPgj2X5XfdbZCpQ1tamDJZaP_hxOXTS6IxEV9fa7_pgQQopPEvsqUd7_VPLMhJRN3u6iKCgisWMO7UlLy1kkUqR8eP1k4QBBFOwiD_KIpfXGcul9yIHjvzQAxWgz9pF-qsmhQQjvg.ZGq8lnP3P92FEkQs3OPoxk--ED77QGs7fAm_QPKNXCM";
 
-    //     $enqueueToken = Token::parse($tokenString, SampleTokenValues::$secretKey);
+        $enqueueToken = Token::parse($tokenString, SampleTokenValues::$secretKey);
 
-    //     // Validate parsed token
-    //     $this->assertEquals('70cc4011-8505-4604-adbb-ccc58b329ed2', $enqueueToken->getTokenIdentifier());
-    //     $this->assertEquals(SampleTokenValues::$customerId, $enqueueToken->customerId);
-    //     $this->assertEquals('buytickettoken', $enqueueToken->eventId);
-    //     $this->assertEquals('82.192.173.38', $enqueueToken->ipAddress);
-    //     $this->assertEquals('88.192.173.88', $enqueueToken->xForwardedFor);
-    //     $this->assertInstanceOf(DateTime::class, $enqueueToken->issued);
-    //     $this->assertInstanceOf(DateTime::class, $enqueueToken->expires);
-    //     $this->assertEquals(TokenVersion::QT1, $enqueueToken->tokenVersion);
-    //     $this->assertEquals(EncryptionType::AES256, $enqueueToken->encryption);
+        // Validate parsed token
+        $this->assertEquals('70cc4011-8505-4604-adbb-ccc58b329ed2', $enqueueToken->getTokenIdentifier());
+        $this->assertEquals(SampleTokenValues::$customerId, $enqueueToken->customerId);
+        $this->assertEquals('buytickettoken', $enqueueToken->eventId);
+        $this->assertEquals('82.192.173.38', $enqueueToken->ipAddress);
+        $this->assertEquals('88.192.173.88', $enqueueToken->xForwardedFor);
+        $this->assertInstanceOf(DateTime::class, $enqueueToken->issued);
+        $this->assertInstanceOf(DateTime::class, $enqueueToken->expires);
+        $this->assertEquals(TokenVersion::QT1, $enqueueToken->tokenVersion);
+        $this->assertEquals(EncryptionType::AES256, $enqueueToken->encryption);
 
-    //     $this->assertNotNull($enqueueToken->getPayload());
-    //     $payload = $enqueueToken->getPayload();
-    //     $this->assertEquals('V1', $payload->getCustomData()['K1']);
-    //     $this->assertEquals('V2', $payload->getCustomData()['K2']);
-    //     $this->assertEquals(0.34, $payload->getRelativeQuality());
-    //     $this->assertEquals('Connector', $payload->getTokenOrigin());
+        $this->assertNotNull($enqueueToken->getPayload());
+        $payload = $enqueueToken->getPayload();
+        $this->assertEquals('V1', $payload->getCustomData()['K1']);
+        $this->assertEquals('V2', $payload->getCustomData()['K2']);
+        $this->assertEquals(0.34, $payload->getRelativeQuality());
+        $this->assertEquals('Connector', $payload->getTokenOrigin());
 
-    //     $this->assertEquals('Key_3a76149d-3834-48d6-962a-d3362416854a', $payload->getKey());
+        $this->assertEquals('Key_3a76149d-3834-48d6-962a-d3362416854a', $payload->getKey());
 
-    //     $this->assertEquals('2025-10-21 13:04:23', $enqueueToken->issued->format('Y-m-d H:i:s'));
-    //     $this->assertEquals('2026-10-21 12:59:53', $enqueueToken->expires->format('Y-m-d H:i:s'));
+        // The header carries "iss" with millisecond precision, which DateTime only parses from PHP 8.0
+        $this->assertEquals('2025-10-21 13:04:23.001', $enqueueToken->issued->format('Y-m-d H:i:s.v'));
+        $this->assertEquals('2026-10-21 12:59:53', $enqueueToken->expires->format('Y-m-d H:i:s'));
 
-    //     $this->assertNotEmpty($enqueueToken->getTokenWithoutHash());
-    //     $this->assertEquals('ZGq8lnP3P92FEkQs3OPoxk--ED77QGs7fAm_QPKNXCM', $enqueueToken->getHashCode());
-    // }
+        $this->assertNotEmpty($enqueueToken->getTokenWithoutHash());
+        $this->assertEquals('ZGq8lnP3P92FEkQs3OPoxk--ED77QGs7fAm_QPKNXCM', $enqueueToken->getHashCode());
+    }
 
     public function testCreateTokenAndParse()
     {
@@ -361,9 +377,6 @@ class EnqueueTokenTest extends TestCase
 
         $tokenString = $token->getToken();
 
-        // Use this to verify manually if needed
-        echo "Generated token: " . $tokenString . PHP_EOL;
-
         $parsed = Token::parse($tokenString, $secret);
 
         $this->assertEquals($token->getTokenIdentifier(), $parsed->getTokenIdentifier());
@@ -388,5 +401,209 @@ class EnqueueTokenTest extends TestCase
 
         $parsedToken1 = Token::parse($token1String, SampleTokenValues::$secretKey);
         $this->assertEquals("event1", $parsedToken1->eventId);
+    }
+
+    public function testCreateTokenWithInviteOnlyOriginAndParse()
+    {
+        $secret = SampleTokenValues::$secretKey;
+
+        $payload = Payload::enqueue()
+            ->withKey('TestKey')
+            ->withRelativeQuality(0.5)
+            ->withOrigin(TokenOrigin::INVITE_ONLY)
+            ->generate();
+
+        $token = Token::enqueue(SampleTokenValues::$customerId)
+            ->withPayload($payload)
+            ->withEventId('testevent')
+            ->generate($secret);
+
+        $tokenString = $token->getToken();
+        $parsed = Token::parse($tokenString, $secret);
+
+        $this->assertNotNull($parsed->getPayload());
+        $this->assertEquals(TokenOrigin::INVITE_ONLY, $parsed->getPayload()->getTokenOrigin());
+        $this->assertEquals('TestKey', $parsed->getPayload()->getKey());
+        $this->assertEquals(0.5, $parsed->getPayload()->getRelativeQuality());
+    }
+
+    public function testCreateTokenWithAkamaiBotManagerOriginAndParse()
+    {
+        $secret = SampleTokenValues::$secretKey;
+
+        $payload = Payload::enqueue()
+            ->withKey('BotManagerKey')
+            ->withRelativeQuality(0.75)
+            ->withCustomData('detector', 'bot-manager')
+            ->withOrigin(TokenOrigin::AKAMAI_BOT_MANAGER_HEADER_VALIDATOR)
+            ->generate();
+
+        $token = Token::enqueue(SampleTokenValues::$customerId)
+            ->withPayload($payload)
+            ->withEventId('bot-test-event')
+            ->generate($secret);
+
+        $tokenString = $token->getToken();
+        $parsed = Token::parse($tokenString, $secret);
+
+        $this->assertNotNull($parsed->getPayload());
+        $this->assertEquals(TokenOrigin::AKAMAI_BOT_MANAGER_HEADER_VALIDATOR, $parsed->getPayload()->getTokenOrigin());
+        $this->assertEquals('BotManagerKey', $parsed->getPayload()->getKey());
+        $this->assertEquals(0.75, $parsed->getPayload()->getRelativeQuality());
+        $this->assertEquals('bot-manager', $parsed->getPayload()->getCustomData()['detector']);
+    }
+
+    public function testCreateTokenWithConnectorOriginAndParse()
+    {
+        $secret = SampleTokenValues::$secretKey;
+
+        $payload = Payload::enqueue()
+            ->withKey('ConnectorKey')
+            ->withRelativeQuality(0.25)
+            ->withOrigin(TokenOrigin::CONNECTOR)
+            ->generate();
+
+        $token = Token::enqueue(SampleTokenValues::$customerId)
+            ->withPayload($payload)
+            ->withEventId('connector-event')
+            ->generate($secret);
+
+        $tokenString = $token->getToken();
+        $parsed = Token::parse($tokenString, $secret);
+
+        $this->assertNotNull($parsed->getPayload());
+        $this->assertEquals(TokenOrigin::CONNECTOR, $parsed->getPayload()->getTokenOrigin());
+        $this->assertEquals('ConnectorKey', $parsed->getPayload()->getKey());
+        $this->assertEquals(0.25, $parsed->getPayload()->getRelativeQuality());
+    }
+
+    public function testTokenOriginDefaultsToConnector()
+    {
+        $secret = SampleTokenValues::$secretKey;
+
+        $payload = Payload::enqueue()
+            ->withKey('DefaultKey')
+            ->generate();
+
+        $token = Token::enqueue(SampleTokenValues::$customerId)
+            ->withPayload($payload)
+            ->generate($secret);
+
+        $tokenString = $token->getToken();
+        $parsed = Token::parse($tokenString, $secret);
+
+        $this->assertNotNull($parsed->getPayload());
+        $this->assertEquals(TokenOrigin::CONNECTOR, $parsed->getPayload()->getTokenOrigin());
+    }
+
+    public function testParseRejectsEmptySecretKey()
+    {
+        $this->expectException(ArgumentException::class);
+        $this->expectExceptionMessage("Invalid secret key");
+
+        Token::parse(SampleTokenValues::$testToken, "");
+    }
+
+    public function testParseRejectsEmptyToken()
+    {
+        $this->expectException(ArgumentException::class);
+        $this->expectExceptionMessage("Invalid token");
+
+        Token::parse("", SampleTokenValues::$secretKey);
+    }
+
+    public function testParseRejectsTokenWithoutHeader()
+    {
+        $tokenParts = explode(".", SampleTokenValues::$testToken);
+
+        $this->expectException(ArgumentException::class);
+        $this->expectExceptionMessage("Invalid token");
+
+        Token::parse("." . $tokenParts[1] . "." . $tokenParts[2], SampleTokenValues::$secretKey);
+    }
+
+    public function testParseRejectsTokenWithoutHash()
+    {
+        $tokenParts = explode(".", SampleTokenValues::$testToken);
+
+        $this->expectException(ArgumentException::class);
+        $this->expectExceptionMessage("Invalid token");
+
+        Token::parse($tokenParts[0] . "." . $tokenParts[1], SampleTokenValues::$secretKey);
+    }
+
+    public function testParseRejectsTokenWithOnlyAHeader()
+    {
+        $tokenParts = explode(".", SampleTokenValues::$testToken);
+
+        $this->expectException(ArgumentException::class);
+        $this->expectExceptionMessage("Invalid token");
+
+        Token::parse($tokenParts[0], SampleTokenValues::$secretKey);
+    }
+
+    public function testParseRejectsTamperedToken()
+    {
+        $tokenParts = explode(".", SampleTokenValues::$testToken);
+        $tamperedHeader = SignedTokens::encodeHeader([
+            'typ' => TokenVersion::QT1,
+            'enc' => EncryptionType::AES256,
+            'iss' => 1534723200000,
+            'ti' => 'a21d423a-43fd-4821-84fa-4390f6a2fd3e',
+            'c' => 'another-customer',
+        ]);
+
+        $this->expectException(InvalidHashException::class);
+        $this->expectExceptionMessage("The token hash is invalid");
+
+        Token::parse($tamperedHeader . "." . $tokenParts[1] . "." . $tokenParts[2], SampleTokenValues::$secretKey);
+    }
+
+    public function testParseRejectsTokenSignedWithAnotherSecretKey()
+    {
+        $this->expectException(InvalidHashException::class);
+
+        Token::parse(SampleTokenValues::$testToken, "another-secret-key");
+    }
+
+    public function testParseWrapsInvalidHeaderInDeserializationException()
+    {
+        $tokenString = SignedTokens::sign(SignedTokens::encodeHeader(['typ' => TokenVersion::QT1]) . ".");
+
+        try {
+            Token::parse($tokenString, SampleTokenValues::$secretKey);
+            $this->fail("Expected a TokenDeserializationException");
+        } catch (TokenDeserializationException $ex) {
+            $this->assertEquals("Unable to deserialize token", $ex->getMessage());
+            $this->assertInstanceOf(ArgumentException::class, $ex->internalException);
+        }
+    }
+
+    public function testParseWrapsUndecryptablePayloadInDeserializationException()
+    {
+        try {
+            Token::parse(SignedTokens::withUndecryptablePayload(), SampleTokenValues::$secretKey);
+            $this->fail("Expected a TokenDeserializationException");
+        } catch (TokenDeserializationException $ex) {
+            $this->assertEquals("Unable to deserialize token", $ex->getMessage());
+            $this->assertEquals("Decryption failed.", $ex->internalException->getMessage());
+        }
+    }
+
+    public function testGenerateWrapsPayloadFailureInSerializationException()
+    {
+        $payloadFailure = new \Exception("payload failure");
+        $payload = $this->createStub(IEnqueueTokenPayload::class);
+        $payload->method('encryptAndEncode')->willThrowException($payloadFailure);
+
+        try {
+            Token::enqueue(SampleTokenValues::$customerId)
+                ->withPayload($payload)
+                ->generate(SampleTokenValues::$secretKey);
+            $this->fail("Expected a TokenSerializationException");
+        } catch (TokenSerializationException $ex) {
+            $this->assertEquals("Exception serializing token", $ex->getMessage());
+            $this->assertSame($payloadFailure, $ex->internalException);
+        }
     }
 }

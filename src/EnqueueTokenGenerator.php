@@ -22,7 +22,7 @@ class EnqueueTokenGenerator
     public function withValidity(int $validityMilliSeconds): self
     {
         $currentTimestamp = $this->token->issued->getTimestamp();
-        $expiryTimestamp = $currentTimestamp + ($validityMilliSeconds / 1000);
+        $expiryTimestamp = $currentTimestamp + intdiv($validityMilliSeconds, 1000);
         $this->token->expires = (new DateTime())->setTimestamp($expiryTimestamp);
         return $this;
     }
@@ -46,7 +46,7 @@ class EnqueueTokenGenerator
         return $this;
     }
 
-    public function generate(string $secretKey): IEnqueueToken
+    public function generate(#[\SensitiveParameter] string $secretKey): IEnqueueToken
     {
         $this->token->generate($secretKey);
         $clone = $this->token;

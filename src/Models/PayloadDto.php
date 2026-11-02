@@ -32,7 +32,7 @@ class PayloadDto
         return array_values(unpack('C*', $jsonString));
     }
 
-    public static function deserializePayload(string $input, string $secretKey, string $tokenIdentifier): ?PayloadDto
+    public static function deserializePayload(string $input, #[\SensitiveParameter] string $secretKey, string $tokenIdentifier): ?PayloadDto
     {
         $headerEncrypted = Base64UrlEncoding::decode($input);
         $decryptedBytes = AESEncryption::decryptPayload($secretKey, $tokenIdentifier, $headerEncrypted);

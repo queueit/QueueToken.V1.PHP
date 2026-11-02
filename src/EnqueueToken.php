@@ -123,7 +123,7 @@ class EnqueueToken implements IEnqueueToken
             : Utils::generateUUID();
     }
 
-    public function generate(string $secretKey, bool $resetTokenIdentifier = true): void
+    public function generate(#[\SensitiveParameter] string $secretKey, bool $resetTokenIdentifier = true): void
     {
         if ($resetTokenIdentifier) {
             $this->setTokenIdentifier($this->generateTokenIdentifier($this->tokenIdentifierPrefix));
@@ -161,14 +161,14 @@ class EnqueueToken implements IEnqueueToken
         return $dto;
     }
 
-    public static function parse(string $tokenString, string $secretKey): IEnqueueToken
+    public static function parse(string $tokenString, #[\SensitiveParameter] string $secretKey): IEnqueueToken
     {
         self::validateParseInputs($tokenString, $secretKey);
 
         $tokenParts = explode(".", $tokenString);
         $headerPart = $tokenParts[0];
         $payloadPart = $tokenParts[1] ?? '';
-        $hashPart = $tokenParts[2];
+        $hashPart = $tokenParts[2] ?? '';
 
         if (empty($headerPart) || empty($hashPart)) {
             throw new ArgumentException("Invalid token");
@@ -184,7 +184,7 @@ class EnqueueToken implements IEnqueueToken
         }
     }
 
-    private static function validateParseInputs(string $tokenString, string $secretKey): void
+    private static function validateParseInputs(string $tokenString, #[\SensitiveParameter] string $secretKey): void
     {
         if (empty($secretKey)) {
             throw new ArgumentException("Invalid secret key");
@@ -194,7 +194,7 @@ class EnqueueToken implements IEnqueueToken
         }
     }
 
-    private static function validateTokenHash(string $token, string $hashPart, string $secretKey): void
+    private static function validateTokenHash(string $token, string $hashPart, #[\SensitiveParameter] string $secretKey): void
     {
         $hash = ShaHashing::generateHash($secretKey, $token);
         $expectedHash = Base64UrlEncoding::encode($hash);
@@ -203,7 +203,7 @@ class EnqueueToken implements IEnqueueToken
         }
     }
 
-    private static function deserializeToken(string $headerPart, string $payloadPart, string $token, string $hashPart, string $secretKey): IEnqueueToken
+    private static function deserializeToken(string $headerPart, string $payloadPart, string $token, string $hashPart, #[\SensitiveParameter] string $secretKey): IEnqueueToken
     {
         $headerModel = HeaderDto::deserializeHeader($headerPart);
         $payload = !empty($payloadPart)

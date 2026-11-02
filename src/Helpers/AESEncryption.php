@@ -9,7 +9,7 @@ class AESEncryption
 {
     private const CIPHER = 'aes-256-cbc';
 
-    public static function encryptPayload(string $secretKey, string $tokenIdentifier, array $valueToEncrypt): string
+    public static function encryptPayload(#[\SensitiveParameter] string $secretKey, string $tokenIdentifier, array $valueToEncrypt): string
     {
         $key = self::deriveKey($secretKey);
         $iv = self::generateIV($tokenIdentifier);
@@ -24,7 +24,7 @@ class AESEncryption
         return $encryptedData;
     }
 
-    public static function decryptPayload(string $secretKey, string $tokenIdentifier, string $encryptedData): array
+    public static function decryptPayload(#[\SensitiveParameter] string $secretKey, string $tokenIdentifier, string $encryptedData): array
     {
         $key = self::deriveKey($secretKey);
         $iv = self::generateIV($tokenIdentifier);
@@ -38,7 +38,7 @@ class AESEncryption
         return array_values(unpack('C*', $decryptedData));
     }
 
-    private static function deriveKey(string $secretKey): string
+    private static function deriveKey(#[\SensitiveParameter] string $secretKey): string
     {
         return ShaHashing::generateHash($secretKey, '');
     }
